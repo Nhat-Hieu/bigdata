@@ -6,3 +6,10 @@ work/.ipynb_checkpoints/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Spark Jars
+jars/
+
+# Data
+*.parquet
+*.csv
