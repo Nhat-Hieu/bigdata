@@ -1,80 +1,196 @@
-# Hướng Dẫn Cài Đặt Hệ Thống Data Pipeline (Crypto Project)
+# Crypto Data Pipeline using PySpark, Airflow and MinIO
 
-Dự án này cung cấp hạ tầng dữ liệu hoàn chỉnh bao gồm kho lưu trữ (MinIO), hệ thống xử lý dữ liệu lớn (PySpark), cơ sở dữ liệu (PostgreSQL) và hệ thống điều phối tự động (Apache Airflow) để cào dữ liệu thị trường Crypto theo thời gian thực.
+## Project Overview
 
----
+This project builds an end-to-end cryptocurrency data pipeline for collecting, processing and analyzing market data.
 
-## 1. Yêu cầu hệ thống (Prerequisites)
-
-* **Docker** & **Docker Desktop** (Đảm bảo Docker Engine đang hoạt động).
-* **Git** để clone mã nguồn.
+The system automatically collects cryptocurrency data, stores raw datasets in MinIO, processes data using PySpark, generates technical indicators and feature tables, and prepares datasets for machine learning models.
 
 ---
 
-## 2. Các bước khởi chạy hệ thống
+## Technologies
 
-**Bước 1:** Clone kho mã nguồn về máy cá nhân:
-```bash
-git clone <đường-link-github-của-nhóm-bạn>
-cd bigdata-lab
+* Python
+* PySpark
+* Apache Airflow
+* MinIO
+* PostgreSQL
+* Docker Compose
+* Jupyter Notebook
+
+---
+
+## System Architecture
+
+```text
+Bitstamp API
+     ↓
+MinIO (Raw Data Storage)
+     ↓
+PySpark ETL Pipeline
+     ↓
+Feature Engineering
+     ↓
+Feature Tables (.parquet)
+     ↓
+Machine Learning Models
 ```
 
-**Bước 2:** Khởi chạy toàn bộ cụm Server (lần đầu tiên có thể mất 3-5 phút để tải Image):
+---
+
+## Feature Engineering
+
+Technical indicators generated:
+
+* MA10
+* MA60
+* ROC
+* MOM
+* RSI
+* Stochastic K
+* Stochastic D
+
+Target label:
+
+* Buy (1)
+* Sell (0)
+
+---
+
+## Dataset
+
+### Bitcoin Feature Table
+
+Columns:
+
+* timestamp
+* open
+* high
+* low
+* close
+* volume
+* MA10
+* MA60
+* ROC
+* MOM
+* RSI
+* stoch_k
+* stoch_d
+* label
+
+### Altcoin Feature Table
+
+Contains feature tables for multiple cryptocurrencies including:
+
+* ETH
+* XRP
+* ADA
+* SOL
+* DOGE
+* LINK
+* LTC
+* DOT
+* AVAX
+* AAVE
+* BCH
+* ALGO
+* UNI
+* SHIB
+
+---
+
+## Project Structure
+
+```text
+bigdata/
+│
+├── dags/
+│   ├── crypto_pipeline.py
+│   └── crypto_altcoin_pipeline.py
+│
+├── work/
+│   ├── DA2_Read_Bitcoin.ipynb
+│   ├── DA2_Process_Bitcoin.ipynb
+│   ├── DA2_FE_Bitcoin.ipynb
+│   ├── DA2_Label_Save_Bitcoin.ipynb
+│   ├── DA2_Read_Altcoins.ipynb
+│   ├── DA2_Process_Altcoins.ipynb
+│   ├── DA2_FE_Altcoins.ipynb
+│   └── DA2_Label_Save_Altcoins.ipynb
+│
+├── compose.yaml
+├── README.md
+└── dataset_description.txt
+```
+
+---
+
+## Running the Project
+
+Clone repository:
+
+```bash
+git clone https://github.com/Nhat-Hieu/bigdata.git
+cd bigdata
+```
+
+Start all services:
+
 ```bash
 docker compose up -d
 ```
 
-**Bước 3:** Kiểm tra xem các container đã hoạt động thành công chưa:
-```bash
-docker ps
+---
+
+## Access Services
+
+### Jupyter Notebook
+
+```text
+http://localhost:8888
 ```
-*(Nếu thấy 4 container `minio_storage`, `postgres_db`, `pyspark-jupyter` và `airflow_scheduler` hiển thị trạng thái **"Up"** là thành công).*
+
+### Apache Airflow
+
+```text
+http://localhost:8080
+```
+
+### MinIO
+
+```text
+http://localhost:9001
+```
+
+Username:
+
+```text
+admin
+```
+
+Password:
+
+```text
+password123
+```
 
 ---
 
-## 3. Thông tin truy cập các dịch vụ (Services Access)
+## Output
 
-Sau khi hệ thống chạy, bạn có thể truy cập các dịch vụ qua trình duyệt hoặc client:
+Generated feature tables:
 
-### 🪣 Kho lưu trữ MinIO (Data Lakehouse)
-* **Đường dẫn:** [http://localhost:9001](http://localhost:9001)
-* **Tài khoản:**
-  * **Username:** `admin`
-  * **Password:** `password123`
-* **Chức năng:** Chứa bucket `crypto-raw-data` lưu trữ các file CSV dữ liệu thô cào từ sàn Bitstamp (Cập nhật realtime).
+```text
+bitcoin_features.parquet
+altcoin_features.parquet
+```
 
-### 🌬️ Apache Airflow (Điều phối tự động)
-* **Đường dẫn:** [http://localhost:8080](http://localhost:8080) (hoặc [http://127.0.0.1:8080](http://127.0.0.1:8080))
-* **Tài khoản:**
-  * **Username:** `admin`
-  * **Password:** Lấy mật khẩu bảo mật ngẫu nhiên bằng cách chạy lệnh dưới đây trong Terminal:
-    ```bash
-    docker exec -it airflow_scheduler cat standalone_admin_password.txt
-    ```
-* **Chức năng:** Bật/Tắt các luồng DAG cào dữ liệu.
-
-### 📓 Jupyter Notebook (Môi trường PySpark ETL)
-* **Đường dẫn:** [http://localhost:8888](http://localhost:8888)
-* **Mật khẩu/Token:** Tìm link đăng nhập chứa token bảo mật bằng cách chạy lệnh:
-  ```bash
-  docker logs pyspark-jupyter
-  ```
-  *(Tìm dòng có định dạng: `http://127.0.0.1:8888/lab?token=...`)*
-
-### 🐘 PostgreSQL (Kho dữ liệu cấu trúc)
-* **Thông tin kết nối:**
-  * **Host:** `localhost`
-  * **Port:** `5432`
-  * **Database:** `retail_db`
-* **Tài khoản:**
-  * **Username:** `admin`
-  * **Password:** `admin`
+These datasets are used for machine learning tasks such as Buy/Sell signal prediction.
 
 ---
 
-## 4. Cách tắt hệ thống an toàn
+## Author
 
-Khi hoàn thành công việc, để giải phóng bộ nhớ RAM và tài nguyên CPU cho máy tính, hãy mở Terminal tại thư mục project và chạy lệnh:
-```bash
-docker compose down
-```
+Hồ Tăng Nhật Hiếu
+
+Major: Data Science and Artificial Intelligence
